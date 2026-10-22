@@ -62,17 +62,27 @@ object Insights {
         return known.count { it.intentionDone == 1 } to known.size
     }
 
-    /** "On this day": the same date in earlier years, plus one month ago. */
+    /** "On this day": a week, 1/3/6 months ago, and the same date in earlier years. */
     fun memories(j: Journal, today: LocalDate): List<Memory> {
         val out = mutableListOf<Memory>()
-        (1..10).forEach { y ->
-            val d = runCatching { today.minusYears(y.toLong()) }.getOrNull() ?: return@forEach
-            j.entry(d.toEpochDay())?.takeIf { it.hasContent || j.photosOf(it.day).isNotEmpty() }?.let {
-                out += Memory(it, if (y == 1) "לפני שנה" else "לפני $y שנים")
-            }
+        fun add(d: LocalDate, label: String) {
+            j.entry(d.toEpochDay())?.takeIf { it.hasContent || j.photosOf(it.day).isNotEmpty() }?.let { out += Memory(it, label) }
         }
-        j.entry(today.minusMonths(1).toEpochDay())?.takeIf { it.hasContent }?.let { out += Memory(it, "לפני חודש") }
+        add(today.minusWeeks(1), "לפני שבוע בדיוק")
+        add(today.minusMonths(1), "לפני חודש")
+        add(today.minusMonths(3), "לפני שלושה חודשים")
+        add(today.minusMonths(6), "לפני חצי שנה")
+        (1..10).forEach { y -> add(today.minusYears(y.toLong()), if (y == 1) "לפני שנה" else "לפני $y שנים") }
         return out
+    }
+
+    /** One good day from the past (rated 5, starred or with a photo), a different one each day. */
+    fun goodDay(j: Journal, today: LocalDate): Memory? {
+        val t = today.toEpochDay()
+        val candidates = j.entries.filter { it.day <= t - 14 && (it.mood == 5 || it.starred || (it.mood >= 4 && j.photosOf(it.day).isNotEmpty())) }
+            .sortedBy { it.day }
+        if (candidates.isEmpty()) return null
+        return Memory(candidates[(t % candidates.size).toInt()], "יום טוב מהעבר")
     }
 
     /** Lessons ("what I learned") newest first, optionally only days with a given activity. */

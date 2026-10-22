@@ -74,6 +74,7 @@ import com.matan.journal.data.Person
 import com.matan.journal.data.PersonCategory
 import com.matan.journal.data.Photo
 import com.matan.journal.data.Place
+import com.matan.journal.logic.Echo
 import com.matan.journal.logic.energies
 import com.matan.journal.logic.moods
 import com.matan.journal.ui.AppViewModel
@@ -123,7 +124,7 @@ fun EntryScreen(vm: AppViewModel, nav: NavController, day: Long) {
         }) { Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, "יום הבא") }
     }) { pad ->
         Column(Modifier.padding(pad).fillMaxSize().imePadding().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp)) {
-            EntryEditor(vm, j, day, editable = t - day <= EDIT_DAYS)
+            EntryEditor(vm, j, day, editable = t - day <= EDIT_DAYS) { nav.navigate(Routes.entry(it)) }
         }
     }
 }
@@ -132,7 +133,7 @@ fun EntryScreen(vm: AppViewModel, nav: NavController, day: Long) {
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun EntryEditor(vm: AppViewModel, j: Journal, day: Long, editable: Boolean) {
+fun EntryEditor(vm: AppViewModel, j: Journal, day: Long, editable: Boolean, onOpenDay: (Long) -> Unit = {}) {
     val existing = j.entry(day)
     val yesterdayIntention = j.entry(day - 1)?.intention?.takeIf { it.isNotBlank() }
 
@@ -181,9 +182,9 @@ fun EntryEditor(vm: AppViewModel, j: Journal, day: Long, editable: Boolean) {
         Scale("אנרגיה", energies, energy, editable) { energy = it }
 
         // ---- chips ----
-        ChipSection(vm, j, day, LinkKind.ACTIVITY, "מה עשיתי", editable, ::ensurePage)
-        ChipSection(vm, j, day, LinkKind.PERSON, "עם מי", editable, ::ensurePage)
-        ChipSection(vm, j, day, LinkKind.PLACE, "איפה", editable, ::ensurePage)
+        ChipSection(vm, j, day, LinkKind.ACTIVITY, "מה עשיתי", editable, ::ensurePage, onOpenDay)
+        ChipSection(vm, j, day, LinkKind.PERSON, "עם מי", editable, ::ensurePage, onOpenDay)
+        ChipSection(vm, j, day, LinkKind.PLACE, "איפה", editable, ::ensurePage, onOpenDay)
 
         // ---- writing ----
         NotebookField("מה עשיתי היום", "כמה מילים על היום...", did, { did = it }, !editable)
@@ -210,6 +211,17 @@ fun EntryEditor(vm: AppViewModel, j: Journal, day: Long, editable: Boolean) {
         }
         if (!editable) Text("אפשר לכתוב עד $EDIT_DAYS ימים אחורה – הדף הזה לקריאה בלבד", style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.outline)
+        if (day == today() && j.written(day)) {
+            val reactions = Echo.reactions(j, day)
+            if (reactions.isNotEmpty()) {
+                PaperCard(color = MaterialTheme.colorScheme.primaryContainer) {
+                    Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Text("📔 היומן שם לב", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                        reactions.forEach { Text(it, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onPrimaryContainer) }
+                    }
+                }
+            }
+        }
         if (editable && existing == null && !dirty()) Text("נשמר אוטומטית ✨", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.outline)
     }
 }
@@ -236,7 +248,7 @@ private fun Scale(title: String, faces: List<String>, value: Int, editable: Bool
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun ChipSection(vm: AppViewModel, j: Journal, day: Long, kind: LinkKind, title: String, editable: Boolean, ensurePage: () -> Unit) {
+private fun ChipSection(vm: AppViewModel, j: Journal, day: Long, kind: LinkKind, title: String, editable: Boolean, ensurePage: () -> Unit, onOpenDay: (Long) -> Unit) {
     val on = j.linksOf(day, kind)
     val usage = j.links.filter { it.kind == kind }.groupingBy { it.refId }.eachCount()
     val items: List<Pair<Long, String>> = when (kind) {
@@ -265,6 +277,8 @@ private fun ChipSection(vm: AppViewModel, j: Journal, day: Long, kind: LinkKind,
                 AssistChip(onClick = { adding = true }, label = { Text(when (kind) { LinkKind.ACTIVITY -> "+ פעילות"; LinkKind.PERSON -> "+ אדם"; LinkKind.PLACE -> "+ מקום" }) })
             }
         }
+        // "the last time..." under what you picked
+        on.take(3).forEach { id -> EchoLine(j, kind, id, day, onOpenDay) }
     }
     if (adding) AddChipDialog(kind, onDismiss = { adding = false }) { name, extra, category ->
         ensurePage()
@@ -449,3 +463,26 @@ private fun VoiceSection(vm: AppViewModel, j: Journal, day: Long, editable: Bool
     }
 }
 
+@Composable
+private fun EchoLine(j: Journal, kind: LinkKind, id: Long, day: Long, onOpenDay: (Long) -> Unit) {
+    val context = LocalContext.current
+    val last = Echo.last(j, kind, id, day)
+    val color = chipColor(j, kind, id)
+    Row(
+        Modifier.fillMaxWidth().padding(top = 6.dp)
+            .background(color.copy(alpha = 0.08f), RoundedCornerShape(14.dp))
+            .clickable(enabled = last != null) { last?.let { onOpenDay(it.day) } }
+            .padding(10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(Modifier.size(8.dp).background(color, CircleShape))
+        Column(Modifier.weight(1f).padding(horizontal = 10.dp)) {
+            Text(j.name(kind, id) + " · " + Echo.line(j, kind, id, day), style = MaterialTheme.typography.labelLarge)
+            last?.snippet?.let { Text("\u201C$it\u201D", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+        }
+        last?.photo?.let { p ->
+            val bmp = rememberBitmap(p.fileName) { Media.thumb(context, p.fileName, 200) }
+            Thumb(bmp, 44.dp)
+        }
+    }
+}

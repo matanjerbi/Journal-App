@@ -110,7 +110,19 @@ fun TodayScreen(vm: AppViewModel, nav: NavController) {
                     }
                 }
             }
-            memories.firstOrNull()?.let { m -> MemoryCard(j, m.entry, m.label) { nav.navigate(Routes.entry(m.entry.day)) } }
+            // lessons coming back on a spaced schedule
+            com.matan.journal.logic.Echo.lessons(j, t).forEach { l ->
+                PaperCard(onClick = { nav.navigate(Routes.entry(l.entry.day)) }, color = MaterialTheme.colorScheme.secondaryContainer) {
+                    Column(Modifier.padding(14.dp)) {
+                        Text("📒 ${l.label}:", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSecondaryContainer)
+                        Text(l.entry.learned, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSecondaryContainer)
+                    }
+                }
+            }
+            // memories: a week / months / years ago, and one good day from the past
+            (memories.take(2) + listOfNotNull(Insights.goodDay(j, date)))
+                .distinctBy { it.entry.day }
+                .forEach { m -> MemoryCard(j, m.entry, m.label) { nav.navigate(Routes.entry(m.entry.day)) } }
             if (missing.isNotEmpty()) {
                 PaperCard(color = MaterialTheme.colorScheme.secondaryContainer) {
                     Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -121,7 +133,7 @@ fun TodayScreen(vm: AppViewModel, nav: NavController) {
                     }
                 }
             }
-            EntryEditor(vm, j, t, editable = true)
+            EntryEditor(vm, j, t, editable = true) { nav.navigate(Routes.entry(it)) }
         }
     }
 }

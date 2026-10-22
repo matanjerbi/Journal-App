@@ -55,4 +55,37 @@ class InsightsTest {
     @Test fun weekStartsOnSunday() {
         assertEquals(LocalDate.of(2026, 10, 18).toEpochDay(), Insights.weekStart(today)) // Thursday -> Sunday 18/10
     }
+
+    @Test fun echo_lastTimeAndFirstTime() {
+        val j = Journal(
+            entries = listOf(Entry(day = t - 9, learned = "הסרב נכנס"), Entry(day = t)),
+            activities = listOf(Activity(1, "טניס")),
+            links = listOf(Link(t - 9, LinkKind.ACTIVITY, 1), Link(t, LinkKind.ACTIVITY, 1)),
+        )
+        val last = Echo.last(j, LinkKind.ACTIVITY, 1, t)!!
+        assertEquals(9L, last.daysAgo)
+        assertEquals("הסרב נכנס", last.snippet)
+        assertTrue(Echo.line(j, LinkKind.ACTIVITY, 1, t - 9).contains("פעם ראשונה"))
+    }
+
+    @Test fun reactions_monthMilestone() {
+        val days = (0L until 5L).map { t - it }.filter { LocalDate.ofEpochDay(it).month == today.month }
+        val j = Journal(
+            entries = days.map { Entry(day = it, did = "x") },
+            activities = listOf(Activity(1, "מכון")),
+            links = days.map { Link(it, LinkKind.ACTIVITY, 1) },
+        )
+        assertTrue(Echo.reactions(j, t).any { it.contains("פעם ה-5") })
+    }
+
+    @Test fun lessons_comeBackAfterAWeek() {
+        val j = Journal(entries = listOf(Entry(day = t - 7, learned = "לנשום לפני שעונים")))
+        val l = Echo.lessons(j, t)
+        assertEquals("לפני שבוע כתבת", l.single().label)
+    }
+
+    @Test fun memories_shortIntervals() {
+        val j = Journal(entries = listOf(Entry(day = today.minusWeeks(1).toEpochDay(), good = "ים")))
+        assertEquals("לפני שבוע בדיוק", Insights.memories(j, today).single().label)
+    }
 }

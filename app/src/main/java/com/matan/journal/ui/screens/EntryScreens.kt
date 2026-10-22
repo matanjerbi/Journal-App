@@ -77,6 +77,9 @@ import com.matan.journal.data.Place
 import com.matan.journal.logic.energies
 import com.matan.journal.logic.moods
 import com.matan.journal.ui.AppViewModel
+import com.matan.journal.ui.ColorChip
+import com.matan.journal.ui.categoryColor
+import com.matan.journal.ui.chipColor
 import com.matan.journal.ui.Loading
 import com.matan.journal.ui.MoodColors
 import com.matan.journal.ui.NotebookField
@@ -251,10 +254,10 @@ private fun ChipSection(vm: AppViewModel, j: Journal, day: Long, kind: LinkKind,
         Text(title, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 4.dp)) {
             (shown + items.filter { it.first in on && it !in shown }).forEach { (id, label) ->
-                FilterChip(
+                ColorChip(
                     selected = id in on, enabled = editable,
                     onClick = { ensurePage(); vm.launch { vm.repo.toggleLink(day, kind, id, id !in on) } },
-                    label = { Text(label) },
+                    label = label, color = chipColor(j, kind, id),
                 )
             }
             if (editable) {
@@ -298,7 +301,7 @@ fun AddChipDialog(kind: LinkKind, onDismiss: () -> Unit, onSave: (String, String
                         }
                     }
                     LinkKind.PERSON -> FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        PersonCategory.entries.forEach { c -> FilterChip(c == cat, { cat = c }, { Text(c.label()) }) }
+                        PersonCategory.entries.forEach { c -> ColorChip(c == cat, { cat = c }, c.label(), categoryColor(c)) }
                     }
                     LinkKind.PLACE -> {}
                 }

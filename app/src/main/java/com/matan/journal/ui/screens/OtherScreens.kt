@@ -59,6 +59,8 @@ import com.matan.journal.data.Media
 import com.matan.journal.data.Review
 import com.matan.journal.logic.Insights
 import com.matan.journal.ui.AppViewModel
+import com.matan.journal.ui.ColorChip
+import com.matan.journal.ui.chipColor
 import com.matan.journal.ui.ConfirmDialog
 import com.matan.journal.ui.Loading
 import com.matan.journal.ui.NotebookField
@@ -96,7 +98,7 @@ fun LessonsScreen(vm: AppViewModel, nav: NavController) {
             if (withLessons.isNotEmpty()) item {
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     FilterChip(filter == 0L, { filter = 0 }, { Text("הכל") })
-                    withLessons.forEach { a -> FilterChip(filter == a.id, { filter = a.id }, { Text("${a.emoji} ${a.name}".trim()) }) }
+                    withLessons.forEach { a -> ColorChip(filter == a.id, { filter = a.id }, "${a.emoji} ${a.name}".trim(), chipColor(j, LinkKind.ACTIVITY, a.id)) }
                 }
             }
             if (lessons.isEmpty()) item { Text("עוד אין לקחים. כל תשובה ל\"מה למדתי\" נאספת לכאן.", Modifier.padding(16.dp)) }
@@ -302,18 +304,18 @@ fun SettingsScreen(vm: AppViewModel, nav: NavController) {
             Text("לחיצה על צ'יפ מוחקת אותו. מוסיפים חדשים ישר מדף היום.", style = MaterialTheme.typography.bodySmall)
             Text("פעילויות", style = MaterialTheme.typography.titleSmall)
             FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                j.activities.forEach { a -> FilterChip(false, { removing = LinkKind.ACTIVITY to a.id }, { Text("${a.emoji} ${a.name}".trim()) }) }
+                j.activities.forEach { a -> ColorChip(false, { removing = LinkKind.ACTIVITY to a.id }, "${a.emoji} ${a.name}".trim(), chipColor(j, LinkKind.ACTIVITY, a.id)) }
             }
             if (j.people.isNotEmpty()) {
                 Text("אנשים", style = MaterialTheme.typography.titleSmall)
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    j.people.forEach { p -> FilterChip(false, { removing = LinkKind.PERSON to p.id }, { Text("${p.name} · ${p.category.label()}") }) }
+                    j.people.forEach { p -> ColorChip(false, { removing = LinkKind.PERSON to p.id }, "${p.name} · ${p.category.label()}", chipColor(j, LinkKind.PERSON, p.id)) }
                 }
             }
             if (j.places.isNotEmpty()) {
                 Text("מקומות", style = MaterialTheme.typography.titleSmall)
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    j.places.forEach { p -> FilterChip(false, { removing = LinkKind.PLACE to p.id }, { Text(p.name) }) }
+                    j.places.forEach { p -> ColorChip(false, { removing = LinkKind.PLACE to p.id }, p.name, chipColor(j, LinkKind.PLACE, p.id)) }
                 }
             }
 

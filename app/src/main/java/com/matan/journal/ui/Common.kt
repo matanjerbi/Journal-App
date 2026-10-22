@@ -255,3 +255,51 @@ fun LockScreen(onUnlock: () -> Unit) {
     }
 }
 
+
+// ======================= colored chips =======================
+
+/** Distinct, mid-tone colors that read well on paper and at night. */
+val ChipPalette = listOf(
+    Color(0xFFE07A5F), Color(0xFF3D9970), Color(0xFF4F86C6), Color(0xFFC77DBA), Color(0xFFE0A030),
+    Color(0xFF2BA5A5), Color(0xFFD45D79), Color(0xFF8C7AE6), Color(0xFF6BAF3A), Color(0xFFB5835A),
+)
+
+fun categoryColor(c: com.matan.journal.data.PersonCategory) = when (c) {
+    com.matan.journal.data.PersonCategory.FAMILY -> Color(0xFFE0A030)
+    com.matan.journal.data.PersonCategory.FRIENDS -> Color(0xFF3D9970)
+    com.matan.journal.data.PersonCategory.PARTNER -> Color(0xFFD45D79)
+    com.matan.journal.data.PersonCategory.WORK -> Color(0xFF4F86C6)
+    com.matan.journal.data.PersonCategory.OTHER -> Color(0xFF9C8D7C)
+}
+
+val PlaceColor = Color(0xFF2BA5A5)
+
+/** Each activity keeps its own color; people take their category's color; places are teal. */
+fun chipColor(j: com.matan.journal.data.Journal, kind: com.matan.journal.data.LinkKind, id: Long): Color = when (kind) {
+    com.matan.journal.data.LinkKind.ACTIVITY -> ChipPalette[(id % ChipPalette.size).toInt()]
+    com.matan.journal.data.LinkKind.PERSON -> j.person(id)?.let { categoryColor(it.category) } ?: ChipPalette[2]
+    com.matan.journal.data.LinkKind.PLACE -> PlaceColor
+}
+
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+@Composable
+fun ColorChip(selected: Boolean, onClick: () -> Unit, label: String, color: Color, enabled: Boolean = true) {
+    androidx.compose.material3.FilterChip(
+        selected = selected, onClick = onClick, enabled = enabled,
+        label = { Text(label) },
+        colors = androidx.compose.material3.FilterChipDefaults.filterChipColors(
+            containerColor = color.copy(alpha = 0.08f),
+            labelColor = MaterialTheme.colorScheme.onSurface,
+            selectedContainerColor = color.copy(alpha = 0.85f),
+            selectedLabelColor = Color.White,
+            disabledContainerColor = color.copy(alpha = 0.05f),
+            disabledSelectedContainerColor = color.copy(alpha = 0.6f),
+            disabledLabelColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+        ),
+        border = androidx.compose.material3.FilterChipDefaults.filterChipBorder(
+            enabled = enabled, selected = selected,
+            borderColor = color.copy(alpha = 0.7f), selectedBorderColor = color,
+            disabledBorderColor = color.copy(alpha = 0.3f), disabledSelectedBorderColor = color.copy(alpha = 0.6f),
+        ),
+    )
+}

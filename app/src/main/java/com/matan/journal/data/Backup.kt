@@ -23,7 +23,7 @@ import javax.crypto.spec.PBEKeySpec
 import javax.crypto.spec.SecretKeySpec
 
 /**
- * Encrypted backup: "JRNL1" | salt(16) | iv(16) | AES-256-CTR( zip(data.json + media/*) ) | HMAC-SHA256(32).
+ * Encrypted backup: "JRNL1" | salt(16) | iv(16) | AES-256-CTR( zip(data.json + media files) ) | HMAC-SHA256(32).
  * Keys come from the password with PBKDF2 (120k rounds). Encrypt-then-MAC; the MAC is checked before anything is restored.
  */
 object Backup {

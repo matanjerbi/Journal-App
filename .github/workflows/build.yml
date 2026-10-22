@@ -1,0 +1,47 @@
+name: Build APK
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Test and build
+        run: |
+          chmod +x gradlew
+          set -o pipefail
+          ./gradlew testDebugUnitTest assembleDebug --no-daemon --stacktrace 2>&1 | tee build.log
+
+      - name: Report errors
+        if: failure()
+        run: |
+          grep -E "^e: |error:|FAILED|What went wrong" -A3 build.log | head -60 | while IFS= read -r line; do
+            echo "::error::${line}"
+          done
+
+      - name: Publish APK
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp app/build/outputs/apk/debug/app-debug.apk Journal.apk
+          gh release delete latest --yes --cleanup-tag || true
+          gh release create latest Journal.apk \
+            --target "${{ github.sha }}" \
+            --title "Journal - latest build" \
+            --notes "Build of ${GITHUB_SHA::7}. Download Journal.apk below and install it." \
+            --latest

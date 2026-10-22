@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Notebook with ribbon and a small heart -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp" android:height="108dp" android:viewportWidth="108" android:viewportHeight="108">
+    <path android:pathData="M36,30 L72,30 Q76,30 76,34 L76,78 L36,78 Q32,78 32,74 L32,34 Q32,30 36,30 Z" android:fillColor="#FFF6E5" />
+    <path android:pathData="M38,30 L38,78" android:strokeColor="#E0B48C" android:strokeWidth="2" />
+    <path android:pathData="M44,44 L68,44 M44,52 L68,52 M44,60 L62,60" android:strokeColor="#D9C6AE" android:strokeWidth="2" android:strokeLineCap="round" />
+    <path android:pathData="M66,30 L66,44 L69,41 L72,44 L72,30 Z" android:fillColor="#E25B45" />
+    <path android:pathData="M54,72 C50,68 46,66 48,63 C50,61 53,62 54,64 C55,62 58,61 60,63 C62,66 58,68 54,72 Z" android:fillColor="#E25B45" />
+</vector>
